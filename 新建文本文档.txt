@@ -1,0 +1,42 @@
+*** 6J1_P *********************************good2*********
+* Created on 10/07/2022 22:25 using paint_kip.jar
+* www.dmitrynizh.com/tubeparams_image.htm
+* Plate Curves image file: 6j1-p.png
+* Data source link: <plate curves URL>
+*----------------------------------------------------------------------------------
+.SUBCKT 6J1_P P G2 G K ; LTSpice tetrode.asy pinout
+* .SUBCKT 6J1_P P G K G2 ; Koren Pentode Pspice pinout
++ PARAMS: MU=36.76 KG1=493.39 KP=154.29 KVB=924.49 VCT=-0.1558 EX=1.184 KG2=695.44 KNEE=11.77 KVC=1.571
++ KLAM=7.631E-16 KLAMG=2.764E-4 KNEE2=14.95 KNEX=22.06  KNK=0.7192 KNG=0.07263 KNPL=0.2412 KNSL=572.38 KNPR=456.84 KNSR=629.57
++ CCG=4.3P CGP=0.02P CCP=2.35P VGOFF=-0.2475 IGA=6.2E-4 IGB=0.195 IGC=7.6 IGEX=2
+* Vp_MAX=250 Ip_MAX=20 Vg_step=1 Vg_start=0 Vg_count=9
+* X_MIN=59 Y_MIN=11 X_SIZE=779 Y_SIZE=637 FSZ_X=1296 FSZ_Y=736 XYGrid=false
+* Rp=1400 Vg_ac=20 P_max=1.8 Vg_qui=-4 Vp_qui=300
+* showLoadLine=n showIp=y isDHP=n isPP=n isAsymPP=n isUL=n showDissipLimit=y
+* showIg1=y isInputSnapped=y addLocalNFB=n
+* XYProjections=n harmonicPlot=y dissipPlot=n
+* UL=0.43 EG2=120 gridLevel2=y addKink=y isTanhKnee=y advSigmoid=n
+*----------------------------------------------------------------------------------
+RE1  7 0  1G    ; DUMMY SO NODE 7 HAS 2 CONNECTIONS
+E1   7 0  VALUE=  ; E1 BREAKS UP LONG EQUATION FOR G1.
++{V(G2,K)/KP*LOG(1+EXP((1/MU+(VCT+V(G,K))/SQRT(KVB+V(G2,K)*V(G2,K)))*KP))}
+RE2  6 0  1G    ; DUMMY SO NODE 6 HAS 2 CONNECTIONS
+E2  6 0  VALUE={(PWR(V(7),EX)+PWRS(V(7),EX))} ; Kg1 times KIT current
+RE21 21 0 1
+E21  21 0 VALUE={V(6)/KG1*ATAN((V(P,K)+KNEX)/KNEE)*TANH(V(P,K)/KNEE2)} ; Ip with knee but no slope and no kink
+RE22 22 0 1 ; E22: kink curr deviation for plate
+E22  22 0 VALUE={V(21)*LIMIT(KNK-V(G,K)*KNG,0,0.3)*(-ATAN((V(P,K)-KNPL)/KNSL)+ATAN((V(P,K)-KNPR)/KNSR))}
+G1   P  K  VALUE={V(21)*(1+KLAMG*V(P,K))+KLAM*V(P,K) + V(22)}
+* Alexander Gurskii screen current, see audioXpress 2/2011, with slope and kink added
+RE43 43 K 1G ; Dummy
+E43  43 G2 VALUE={0} ; Dummy
+G2   43 K  VALUE={V(6)/KG2*(KVC-ATAN((V(P,K)+KNEX)/KNEE)*TANH(V(P,K)/KNEE2))/(1+KLAMG*V(P,K))-V(22)}
+RCP  P K  1G     ; FOR CONVERGENCE
+C1   K G  {CCG}  ; CATHODE-GRID 1
+C2   G P  {CGP}  ; GRID 1-PLATE
+C3   K P  {CCP}  ; CATHODE-PLATE
+RE23 G 0 1G
+GG G K VALUE={(IGA+IGB/(IGC+V(P,K)))*(MU/KG1)*
++(PWR(V(G,K)-VGOFF,IGEX)+PWRS(V(G,K)-VGOFF,IGEX))}
+.ENDS
+*$
